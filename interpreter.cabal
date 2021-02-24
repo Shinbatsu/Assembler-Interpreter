@@ -21,12 +21,6 @@ source-repository head
   location: https://github.com/shinbatsu/assembly-haskell-interpreter
 
 library
-  exposed-modules:
-      Evaluator
-      Grammar
-      Interface
-      Lexer
-      Parser
   other-modules:
       Paths_interpreter
   hs-source-dirs:
