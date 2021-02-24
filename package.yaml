@@ -1,0 +1,46 @@
+name:                interpreter
+version:             1.0.0.0
+github:              "shinbatsu/assembly-haskell-interpreter"
+license:             GNU GPL
+author:              "Shinbatsu"
+maintainer:          "nojic132@gmail.com"
+copyright:           "2020 Shinbatsu"
+
+extra-source-files:
+- README.md
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  dependencies:
+  - array
+  - vector
+  - unordered-containers
+  - containers
+  - parsec
+  - mtl
+
+executables:
+  assembly:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - mtl
+    - parser
+
+tests:
+  parser-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - parser
