@@ -7,3 +7,20 @@ import qualified Data.Array as A
 
 defaultVal :: Val
 defaultVal = 0
+
+
+type Reg = String
+
+type Val = Word32
+type SVal = Int32
+
+type Lbl = String
+
+data Msg = UArgMsg Arg
+         | ArgMsg  Arg
+         | StrMsg  String
+         deriving (Eq, Show)
+
+data Arg = Val Val
+         | Reg Reg
+         deriving (Eq, Show)
