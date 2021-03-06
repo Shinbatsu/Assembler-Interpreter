@@ -24,3 +24,10 @@ data Msg = UArgMsg Arg
 data Arg = Val Val
          | Reg Reg
          deriving (Eq, Show)
+
+type Program = V.Vector ProgramLine
+
+data ProgramLine = InstrLine Instruction
+                 | LabelLine Lbl
+                 | Empty
+                 deriving (Eq, Show)
