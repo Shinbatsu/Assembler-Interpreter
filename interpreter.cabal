@@ -10,7 +10,7 @@ homepage:       https://github.com/shinbatsu/assembly-haskell-interpreter#readme
 bug-reports:    https://github.com/shinbatsu/assembly-haskell-interpreter/issues
 author:         Shinbatsu
 maintainer:     nojic132@gmail.com
-copyright:      2020 Shinbatsu
+copyright:      2021 Shinbatsu
 license:        GNU GPL
 build-type:     Simple
 extra-source-files:
@@ -21,6 +21,8 @@ source-repository head
   location: https://github.com/shinbatsu/assembly-haskell-interpreter
 
 library
+  exposed-modules:
+      Grammar
   other-modules:
       Paths_interpreter
   hs-source-dirs:
