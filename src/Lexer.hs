@@ -35,3 +35,36 @@ lexer = (Token.makeTokenParser languageDef) { Token.stringLiteral = myStringLite
                                             , Token.octal = myOctal
                                             , Token.integer = lexeme int
                                             }
+  where
+    lexeme p = do{ x <- p; whiteSpace; return x  }
+    myStringLiteral   = lexeme (
+                          do{ str <- P.between (P.char '\'')
+                                               (P.char '\'' <?> "end of string")
+                                               (P.many stringChar)
+                            ; return (foldr (maybe id (:)) "" str)
+                            }
+                          <?> "literal string")
+    stringChar      =   Just <$> stringLetter
+                        <?> "string character"
+    stringLetter    = P.satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
+    myOctal = do{ _ <- P.oneOf "oOqQ"; number 8 octDigit }
+    number base baseDigit
+        = do{ digits <- P.many1 baseDigit
+            ; let n = foldl (\x d -> base*x + toInteger (digitToInt d)) 0 digits
+            ; seq n (return n)
+            }
+    octDigit = P.satisfy isOctDigit <?> "octal digit"
+    zVal = do { _ <- P.char '0'
+          ; hexadecimal
+         <|> octal
+         <|> decimal
+         <|> return 0
+          }
+    nat = zVal <|> decimal
+    sign =  (C.char '-' >> return negate)
+        <|> (C.char '+' >> return id)
+        <|> return id
+    int = 
+      do 
+        f <- lexeme sign
+        f <$> nat
