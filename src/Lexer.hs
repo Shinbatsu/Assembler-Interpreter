@@ -68,3 +68,16 @@ lexer = (Token.makeTokenParser languageDef) { Token.stringLiteral = myStringLite
       do 
         f <- lexeme sign
         f <$> nat
+
+identifier    = Token.identifier lexer
+reserved      = Token.reserved lexer
+symbol        = Token.symbol lexer
+natural       = Token.natural lexer
+integer       = Token.integer lexer
+decimal       = Token.decimal lexer
+octal         = Token.octal lexer
+hexadecimal   = Token.hexadecimal lexer
+comma         = Token.comma lexer
+whiteSpace    = Token.whiteSpace lexer
+stringLiteral = Token.stringLiteral lexer
+commaSep      = Token.commaSep lexer
