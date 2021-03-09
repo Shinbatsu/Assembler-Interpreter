@@ -23,6 +23,7 @@ source-repository head
 library
   exposed-modules:
       Grammar
+      Lexer
   other-modules:
       Paths_interpreter
   hs-source-dirs:
