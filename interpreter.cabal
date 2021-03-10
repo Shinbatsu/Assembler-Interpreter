@@ -24,6 +24,7 @@ library
   exposed-modules:
       Grammar
       Lexer
+      Parser
   other-modules:
       Paths_interpreter
   hs-source-dirs:
