@@ -92,3 +92,33 @@ uRegName :: Parser Reg
 uRegName = do
   symbol "_"
   identifier
+
+value :: Parser Val
+value =  fromIntegral <$> integer
+
+regName :: Parser Reg
+regName = identifier
+
+lblName :: Parser Lbl
+lblName = identifier
+
+lblDecl:: Parser Lbl
+lblDecl = do
+  lbl <- identifier
+  symbol ":" <?> ("\"" ++ lbl ++ "\"" ++ " cannot be parsed")
+  return lbl
+
+mainParser :: String -> Program
+mainParser str =
+  case tryparse of
+    Left err -> error (show err)
+    Right result -> V.filter (/= Empty) result
+  where
+    ls = V.fromList $ lines str
+    tryparse :: Either ParseError Program
+    tryparse = V.mapM (parse programLineParser "") ls
+
+mainFileParser :: String -> IO Program
+mainFileParser filename = do
+  f <- readFile filename
+  return $ mainParser f
