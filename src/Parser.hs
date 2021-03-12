@@ -66,3 +66,29 @@ instrParser =  (reserved "inc"   >> regName  >>= \r -> return (Inc r))
            <|> (reserved "ret"   >> return Ret)
            <|> (reserved "msg"   >> msgParse >>= \m -> return (Msg m))
            <|> (reserved "end"   >> return End)
+
+msgParse :: Parser [Msg]
+msgParse = commaSep message
+
+argument :: Parser Arg
+argument =  (regName  >>= \r  -> return (Reg r))
+        <|> (value    >>= \v  -> return (Val v))
+
+uArgument :: Parser Arg
+uArgument =  (uRegName  >>= \r  -> return (Reg r))
+         <|> (uValue    >>= \v  -> return (Val v))
+
+message :: Parser Msg
+message =  (argument  >>= \a  -> return (ArgMsg  a))
+       <|> (uArgument >>= \ua -> return (UArgMsg ua))
+       <|> (stringLiteral >>= \s -> return (StrMsg s))
+
+uValue :: Parser Val
+uValue = do
+  symbol "_"
+  fromIntegral <$> natural
+
+uRegName :: Parser Reg
+uRegName = do
+  symbol "_"
+  identifier
