@@ -26,3 +26,65 @@ data CPUState = CPUState { registers  :: HM.HashMap Reg Val
                          , program    :: Program
                          , terminated :: Bool
                          } deriving (Eq, Show)
+
+startingState :: CPUState
+startingState = CPUState
+ { registers  = HM.empty
+ , callStack  = []
+ , stack      = []
+ , flags      = 0
+ , currLine   = 0
+ , printLns   = S.empty
+ , program    = V.empty
+ , terminated = False
+}
+
+evaluate :: CPUState -> CPUState
+evaluate cpu = advance $ case prg V.!? currLine cpu of
+    Just (InstrLine (Inc reg)) -> add reg (Val 1) cpu
+    Just (InstrLine (Dec reg)) -> subSafe reg (Val 1) cpu
+    Just (InstrLine (Mov reg arg)) -> mov reg arg cpu
+    Just (InstrLine (Add reg arg)) -> add reg arg cpu
+    Just (InstrLine (Sub reg arg)) -> subSafe reg arg cpu
+    Just (InstrLine (Mul arg)) -> mul arg cpu 
+    Just (InstrLine (Div reg arg)) -> adjRegWithArg (flip div) reg arg cpu
+    Just (InstrLine (Xor reg arg)) -> adjRegWithArg B.xor reg arg cpu
+    Just (InstrLine (And reg arg)) -> adjRegWithArg (B..&.) reg arg cpu
+    Just (InstrLine (Or  reg arg)) -> adjRegWithArg (B..|.) reg arg cpu
+    Just (InstrLine (Not reg)) -> adjReg B.complement reg cpu
+    Just (InstrLine (Neg reg)) -> adjReg negate reg cpu
+    Just (InstrLine (Shr reg arg)) -> shift32 RIGHT reg arg cpu
+    Just (InstrLine (Shl reg arg)) -> shift32 LEFT  reg arg cpu
+    Just (InstrLine (Rol reg arg)) -> rotate32 LEFT  reg arg cpu
+    Just (InstrLine (Ror reg arg)) -> rotate32 RIGHT reg arg cpu
+    Just (InstrLine (Cmp arg0 arg1)) -> comp arg0 arg1 cpu
+    Just (InstrLine (Jmp lbl))  -> jump lbl cpu
+    Just (InstrLine (Jne lbl))  -> jmpNone 0x0040 lbl cpu
+    Just (InstrLine (Je  lbl))  -> jmpAll  0x0040 lbl cpu
+    Just (InstrLine (Jge lbl))  -> jmpXnor jmpAll 0x0800 jmpAll 0x0080 lbl cpu
+    Just (InstrLine (Jl  lbl))  -> jmpXor  jmpAll 0x0800 jmpAll 0x0080 lbl cpu
+    Just (InstrLine (Jg  lbl))  -> jmpAnd  jmpNone 0x0040 (jmpXnor jmpAll 0x0800 jmpAll) 0x0080 lbl cpu
+    Just (InstrLine (Jle lbl))  -> jmpOr   jmpAll  0x0040 (jmpXor  jmpAll 0x0800 jmpAll) 0x0080 lbl cpu
+    Just (InstrLine (Jo  lbl))  -> jmpAll  0x0400 lbl cpu
+    Just (InstrLine (Jc  lbl))  -> jmpAll  0x0001 lbl cpu
+    Just (InstrLine (Jp  lbl))  -> jmpAll  0x0004 lbl cpu
+    Just (InstrLine (Js  lbl))  -> jmpAll  0x0080 lbl cpu
+    Just (InstrLine (Jno lbl))  -> jmpNone 0x0400 lbl cpu
+    Just (InstrLine (Jnc lbl))  -> jmpNone 0x0001 lbl cpu
+    Just (InstrLine (Jnp lbl))  -> jmpNone 0x0004 lbl cpu
+    Just (InstrLine (Jns lbl))  -> jmpNone 0x0080 lbl cpu
+    Just (InstrLine (Call lbl)) -> call lbl cpu
+    Just (InstrLine (Push arg)) -> push arg cpu
+    Just (InstrLine (Pop  reg)) -> pop reg cpu
+    Just (InstrLine PushF) -> pushf cpu
+    Just (InstrLine PopF)  -> popf cpu
+    Just (InstrLine Ret) -> ret cpu
+    Just (InstrLine (Msg msgs)) -> msg cpu msgs
+    Just (InstrLine End) -> msg (cpu { terminated = True }) [StrMsg "0"]
+    Just (LabelLine lbl) -> cpu
+    Nothing              -> msg (cpu { terminated = True }) [StrMsg "-1"]
+    where
+      prg      = program cpu
+      cpuFlags = flags cpu
+
+data ShiftDir = LEFT | RIGHT
