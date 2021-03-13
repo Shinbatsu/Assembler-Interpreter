@@ -88,3 +88,52 @@ evaluate cpu = advance $ case prg V.!? currLine cpu of
       cpuFlags = flags cpu
 
 data ShiftDir = LEFT | RIGHT
+
+rotate32 :: ShiftDir -> Reg -> Arg -> CPUState -> CPUState
+rotate32 dir reg arg cpu = (mov reg (Val $ safe 32 shift + cout) cpu) {flags = flg}
+  where
+    argval = getArgVal arg cpu
+    regval = toInteger $ getRegVal reg cpu
+    flg = getFlags shift
+    cout = flg B..&. 1
+    dirnum = case dir of
+              LEFT  ->  B.shiftL
+              RIGHT ->  B.shiftR
+    shift = dirnum regval $ fromIntegral argval
+
+shift32 :: ShiftDir -> Reg -> Arg -> CPUState -> CPUState
+shift32 dir reg arg cpu = (mov reg (Val $ safe 32 shift) cpu) {flags = flg}
+  where
+    argval = getArgVal arg cpu
+    regval = toInteger $ getRegVal reg cpu
+    flg = getFlags shift
+    dirnum = case dir of
+              LEFT  ->  B.shiftL
+              RIGHT ->  B.shiftR
+    shift = dirnum regval $ fromIntegral argval
+
+safe :: (Integral a, B.Bits a) => Int -> a -> Val
+safe n = fromIntegral . (B..&.) (B.shiftL 1 n - 1)
+
+setFlags :: Reg -> CPUState -> CPUState
+setFlags reg cpu = cpu {flags = getFlags $ getArgVal (Reg reg) cpu}
+
+getFlags :: (Integral a, B.Bits a) => a -> Val
+getFlags val = sum $ zipWith (*)
+  (map (fromIntegral . fromEnum . ($ val)) flagFunc)
+  (map B.bit [0x0.. 0xF])
+  where
+    flagFunc :: (Integral a, B.Bits a) => [a -> Bool]
+    flagFunc = [ (0 /=) . (0x100000000 B..&.)
+               , const False
+               , (0 ==) . (1 B..&.) . B.popCount
+               , const False
+               , const False
+               , const False
+               , (0 ==)
+               , (> 0) . (0x80000000 B..&.)
+               , const False
+               , const False
+               , const False
+               , const False
+               ]
