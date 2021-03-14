@@ -181,3 +181,65 @@ twoC :: Val -> Val
 twoC v = B.complement v + 1
 
 type CondJmp = Val -> Lbl -> CPUState -> CPUState
+
+jmpNot :: CondJmp -> CondJmp
+jmpNot jmp val lbl cpu = 
+  if cpu' == cpu
+    then jump lbl cpu
+    else cpu
+  where
+    cpu' = jmp val lbl cpu
+
+jmpNor :: CondJmp -> Val -> CondJmp -> CondJmp
+jmpNor jmp0 val0 jmp1 = jmpNot $ jmpOr jmp0 val0 jmp1
+
+jmpOr :: CondJmp -> Val -> CondJmp -> CondJmp
+jmpOr jmp0 val0 jmp1 val1 lbl cpu =
+  if (cpu0 /= cpu) || (cpu1 /= cpu)
+    then jump lbl cpu
+    else cpu
+  where
+    cpu0 = jmp0 val0 lbl cpu
+    cpu1 = jmp1 val1 lbl cpu
+
+jmpAnd :: CondJmp -> Val -> CondJmp -> CondJmp
+jmpAnd jmp0 val0 jmp1 val1 lbl cpu =
+  if (cpu0 /= cpu) && (cpu1 /= cpu)
+    then jump lbl cpu
+    else cpu
+  where
+    cpu0 = jmp0 val0 lbl cpu
+    cpu1 = jmp1 val1 lbl cpu
+
+jmpXor :: CondJmp -> Val -> CondJmp -> CondJmp
+jmpXor jmp0 val0 jmp1 val1 lbl cpu =
+  if (cpu0 /= cpu) /= (cpu1 /= cpu)
+    then jump lbl cpu
+    else cpu
+  where
+    cpu0 = jmp0 val0 lbl cpu
+    cpu1 = jmp1 val1 lbl cpu
+
+jmpXnor :: CondJmp -> Val -> CondJmp -> CondJmp
+jmpXnor jmp0 val0 jmp1 = jmpNot $ jmpXor jmp0 val0 jmp1
+
+jmpAll :: Val -> Lbl -> CPUState -> CPUState
+jmpAll v lbl cpu
+  | cpuFlags B..&. v == v = jump lbl cpu
+  | otherwise             = cpu
+  where
+    cpuFlags = flags cpu
+
+jmpNone :: Val -> Lbl -> CPUState -> CPUState
+jmpNone v lbl cpu
+  | cpuFlags B..&. v == 0 = jump lbl cpu
+  | otherwise             = cpu
+  where
+    cpuFlags = flags cpu
+
+jmpOne :: Val -> Lbl -> CPUState -> CPUState
+jmpOne v lbl cpu
+  | cpuFlags B..&. v /= 0 = jump lbl cpu
+  | otherwise             = cpu
+  where
+    cpuFlags = flags cpu
