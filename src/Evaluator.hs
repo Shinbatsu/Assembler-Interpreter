@@ -137,3 +137,47 @@ getFlags val = sum $ zipWith (*)
                , const False
                , const False
                ]
+
+mul :: Arg -> CPUState -> CPUState
+mul arg cpu = cpu'' {flags = setOV $ flags cpu''}
+  where
+    setOV = if prod > 0xFFFFFFFF
+                then (0x800 B..|.)
+                else id
+    prod = regval cpu * argval cpu
+    regval = toInteger . getRegVal "ax"
+    argval = toInteger . getArgVal arg
+    cpu'' = setFlags "ax" cpu'
+    cpu' = mov "dx" (Val $ safe 32 (prod `B.shiftR` 32)) $ mov "ax" (Val $ safe 32 prod) cpu
+
+add :: Reg -> Arg -> CPUState -> CPUState
+add reg arg cpu = mov reg (Val $ getRegVal reg cpu'') $ cpu'' {flags = setOV $ flags cpu''}
+  where
+    setOV f = if cin /= cout then 0x400 B..|. f else f
+    cin = ((regval cpu B..&. 0x7FFFFFFF) + (argval cpu B..&. 0x7FFFFFFF)) >= 0x80000000
+    regval = toInteger . getRegVal reg
+    argval = toInteger . getArgVal arg
+    cout  = flags cpu'' B..&. 0x1 == 1
+    cpu'' = setFlags reg cpu'
+    cpu'  = adjRegWithArgUnsafe (+) reg arg cpu
+
+sub :: Reg -> Arg -> CPUState -> CPUState
+sub reg arg cpu = mov reg (Val $ regval cpu'') $ cpu'' {flags = setOV $ flags cpu''}
+  where
+    setOV f = if cin /= cout then 0x400 B..|. f else f
+    cin = ((regval cpu B..&. 0x7FFFFFFF) + ((twoC . argval $ cpu) B..&. 0x7FFFFFFF)) >= 0x80000000
+    regval = getRegVal reg
+    argval = getArgVal arg
+    cout = flags cpu'' B..&. 0x1 == 1
+    cpu'' = setFlags reg cpu'
+    cpu' = adjRegWithArgUnsafe subtract reg arg cpu
+
+subSafe :: Reg -> Arg -> CPUState -> CPUState
+subSafe reg arg cpu = add reg (Val newArg) cpu
+  where
+    newArg = twoC . (safe 32 . getArgVal arg) $ cpu
+
+twoC :: Val -> Val
+twoC v = B.complement v + 1
+
+type CondJmp = Val -> Lbl -> CPUState -> CPUState
