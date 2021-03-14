@@ -243,3 +243,24 @@ jmpOne v lbl cpu
   | otherwise             = cpu
   where
     cpuFlags = flags cpu
+
+mov :: Reg -> Arg -> CPUState -> CPUState
+mov reg arg cpu =
+  let cpu' = prepState cpu reg
+  in  cpu' { registers = HM.adjust (const (getArgValSafe arg cpu)) reg $ registers cpu' }
+
+pushf :: CPUState -> CPUState
+pushf = push =<< Val . flags
+
+popf :: CPUState -> CPUState
+popf cpu = cpu {flags = flags'}
+  where
+    (flags', stack') = popOffStack $ stack cpu
+
+push :: Arg -> CPUState -> CPUState
+push arg cpu = cpu { stack = pushToStack (stack cpu) $ getArgVal arg cpu }
+
+pop :: Reg -> CPUState -> CPUState
+pop reg cpu = (mov reg (Val val) cpu) { stack = stack' }
+  where
+    (val, stack') = popOffStack $ stack cpu
