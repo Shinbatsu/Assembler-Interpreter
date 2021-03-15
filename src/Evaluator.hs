@@ -264,3 +264,73 @@ pop :: Reg -> CPUState -> CPUState
 pop reg cpu = (mov reg (Val val) cpu) { stack = stack' }
   where
     (val, stack') = popOffStack $ stack cpu
+
+msg :: CPUState -> [Msg] -> CPUState
+msg cpu msgs = cpu { printLns = printLns cpu S.|> message }
+  where
+    message = concatMap (showMsg cpu) msgs
+    showMsg cpu m =
+      case m of
+        UArgMsg ua -> show $ getArgVal ua cpu
+        ArgMsg a -> show $ getSignedArgVal a cpu
+        StrMsg s -> s
+
+advance :: CPUState -> CPUState
+advance cpu = cpu { currLine = currLine cpu + 1 }
+
+ret :: CPUState -> CPUState
+ret cpu = let (lastPlace, stackTail) = getCall $ callStack cpu
+          in cpu { currLine  = lastPlace
+                 , callStack = stackTail
+                 }
+
+getCall :: CallStack -> (Int, CallStack)
+getCall st = 
+  case uncons st of
+    Just (hd, tl) -> (hd, tl)
+    Nothing       -> error "Attempt to pop empty call stack."
+
+pushToStack :: Stack -> Val -> Stack
+pushToStack st v = v : st
+
+popOffStack :: Stack -> (Val, Stack)
+popOffStack st = 
+  case uncons st of
+    Just (hd, tl) -> (hd, tl)
+    Nothing       -> error "Attempt to pop empty stack."
+
+call :: Lbl -> CPUState -> CPUState
+call lbl cpu = 
+  case V.elemIndex (LabelLine lbl) prg of
+    Just newLn -> cpu { currLine = newLn
+                      , callStack = currLine cpu : callStack cpu
+                      }
+    Nothing    -> error "Call to nonexistant label"
+  where
+    prg = program cpu
+
+jump :: Lbl -> CPUState -> CPUState
+jump lbl cpu = 
+  case V.elemIndex (LabelLine lbl) prg of
+    Just newLn -> cpu { currLine = newLn }
+    Nothing    -> error "Jump to nonexistant label"
+  where
+    prg = program cpu
+
+comp :: Arg -> Arg -> CPUState -> CPUState
+comp arg0 arg1 cpu =
+  let
+    v0 = getSignedArgVal arg0 cpu
+    v1 = getSignedArgVal arg1 cpu
+  in case compare v0 v1 of
+    EQ -> cpu { flags = setClear (flags cpu) [6] [7]  }
+    LT -> cpu { flags = setClear (flags cpu) [7] [6]  }
+    GT -> cpu { flags = setClear (flags cpu) [] [6,7] }
+
+setClear :: Val -> [Int] -> [Int] -> Val
+setClear v [] []        = v
+setClear v [] (cb:cbs)  = setClear (v `B.clearBit` cb) [] cbs
+setClear v (sb:sbs) cbs = setClear (v `B.setBit` sb) sbs cbs
+
+getRegVal :: Reg -> CPUState -> Val
+getRegVal = getArgVal . Reg
