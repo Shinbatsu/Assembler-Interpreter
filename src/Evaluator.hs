@@ -334,3 +334,44 @@ setClear v (sb:sbs) cbs = setClear (v `B.setBit` sb) sbs cbs
 
 getRegVal :: Reg -> CPUState -> Val
 getRegVal = getArgVal . Reg
+
+getArgVal :: Arg -> CPUState -> Val
+getArgVal arg cpu =
+  case arg of
+    Val v -> v
+    Reg r ->
+      let cpu' = prepState cpu r
+      in registers cpu' HM.! r
+
+getSignedArgVal :: Arg -> CPUState -> SVal
+getSignedArgVal arg cpu = if isNeg 
+                            then negate . fromIntegral $ twoC argval
+                            else fromIntegral argval
+  where
+    argval = getArgValSafe arg cpu
+    isNeg  = getFlags argval B..&. 0x0080 /= 0
+
+getArgValSafe :: Arg -> CPUState -> Val
+getArgValSafe arg cpu = (0xFFFFFFFF B..&.) $ getArgVal arg cpu
+
+adjRegUnsafe :: (Val -> Val) -> Reg -> CPUState -> CPUState
+adjRegUnsafe f reg cpu =
+  let cpu' = prepState cpu reg
+  in setFlags reg $ cpu' { registers = HM.adjust f reg $ registers cpu' }
+
+adjReg :: (Val -> Val) -> Reg -> CPUState -> CPUState
+adjReg f reg cpu =
+  let cpu' = prepState cpu reg
+  in setFlags reg $ cpu' { registers = HM.adjust ((B..&. 0xFFFFFFFF) . f) reg $ registers cpu' }
+
+adjRegWithArg :: (Val -> Val -> Val) -> Reg -> Arg -> CPUState -> CPUState
+adjRegWithArg f reg arg cpu = adjReg (f $ getArgVal arg cpu) reg cpu
+
+adjRegWithArgUnsafe :: (Val -> Val -> Val) -> Reg -> Arg -> CPUState -> CPUState
+adjRegWithArgUnsafe f reg arg cpu = adjRegUnsafe (f $ getArgVal arg cpu) reg cpu
+
+prepState :: CPUState -> Reg -> CPUState
+prepState cpu r =
+  case HM.lookup r (registers cpu) of
+    Just v  -> cpu
+    Nothing -> cpu { registers = HM.insert r 0 (registers cpu) }
