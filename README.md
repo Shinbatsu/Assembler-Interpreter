@@ -19,3 +19,35 @@ Advanced Assembly language interpreter.
 - **Control Flow**: `jmp`, `je`, `jne`, `jg`, `jl`, `jge`, `jle`, `jz`, `jo`, `jc`, `jp`, `js`, `jnz`, `jno`, `jnc`, `jnp`, `jns`, `call`, `ret`
 - **Stack Operations**: `push`, `pop`, `pushf`, `popf`
 - **Miscellaneous**: `mov`, `cmp`, `msg`, `end`
+
+## Usage
+
+### Inline
+
+```haskell
+import Interface (runStrIO)
+
+main :: IO ()
+main = do
+  let code = "mov ax, 5\nmsg 'ax is ', ax\nend"
+  runStrIO code
+```
+
+### External module
+
+```haskell
+import Interface (runFileIO)
+
+main :: IO ()
+main = do
+  runFileIO "code.asm"
+```
+
+### Via CLI
+
+Compile and run the `Main.hs` file:
+
+```bash
+ghc Main.hs -o assembler
+./assembler
+```
