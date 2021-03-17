@@ -51,3 +51,6 @@ Compile and run the `Main.hs` file:
 ghc Main.hs -o assembler
 ./assembler
 ```
+
+[!NOTE]  
+Running this program using the `Main` module or `runFileIO` function will execute the loop until `ax` reaches `0` and then display the final value.
