@@ -54,3 +54,18 @@ ghc Main.hs -o assembler
 
 [!NOTE]  
 Running this program using the `Main` module or `runFileIO` function will execute the loop until `ax` reaches `0` and then display the final value.
+
+## Dependencies
+
+- **GHC (The Glasgow Haskell Compiler)**: Available via the [Haskell Platform](https://www.haskell.org/platform/).
+- **Parsec Library**: For constructing parser combinators.
+- **Data Structures**:
+  - `Data.Vector`: For program lines.
+  - `Data.Sequence`: For output messages.
+  - `Data.HashMap.Strict`: For registers and CPU state.
+- **Custom Modules**:
+  - `Grammar`: AST and CPU state definitions.
+  - `Lexer`: Lexical analysis and parsing utilities.
+  - `Parser`: Code parsing into an AST.
+  - `Evaluator`: Instruction execution.
+  - `Interface`: User-friendly program functions.
