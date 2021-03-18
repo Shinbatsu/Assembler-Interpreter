@@ -69,3 +69,32 @@ Running this program using the `Main` module or `runFileIO` function will execut
   - `Parser`: Code parsing into an AST.
   - `Evaluator`: Instruction execution.
   - `Interface`: User-friendly program functions.
+
+## Building
+
+1. **Clone**:
+
+   ```bash
+   git clone https://github.com/Shinbatsu/Assembler-Interpreter.git
+   cd Assembler-Interpreter
+   ```
+
+2. **Prepare**:
+
+   Use Stack to install Haskell dependencies.
+
+3. **Build**:
+
+   Using Stack:
+
+   ```bash
+   stack build
+   ```
+
+4. **Run**:
+
+   ```bash
+   stack exec assembler
+   ```
+
+   When prompted, enter the filepath to the code (e.g., `code.asm`).
